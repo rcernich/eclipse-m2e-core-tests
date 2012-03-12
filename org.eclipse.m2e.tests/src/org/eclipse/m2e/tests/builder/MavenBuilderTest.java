@@ -11,6 +11,7 @@
 
 package org.eclipse.m2e.tests.builder;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -287,4 +288,28 @@ public class MavenBuilderTest extends AbstractMavenProjectTestCase {
     assertTrue(folder.exists());
     assertTrue(folder.isSynchronized(IResource.DEPTH_INFINITE));
   }
+
+  public void test357531_cleanBuild() throws Exception {
+    IProject project = importProject("projects/357531_cleanBuild/pom.xml");
+    waitForJobsToComplete();
+    assertNoErrors(project);
+
+    IFile testFile = project.getFile("clean-test/test.txt");
+    ((IFolder)testFile.getParent()).create(true, true, new NullProgressMonitor());
+    testFile.create(new ByteArrayInputStream(new byte[0]), true,
+        new NullProgressMonitor());
+    assertTrue(testFile.exists());
+    
+    project.build(IncrementalProjectBuilder.FULL_BUILD, monitor);
+    waitForJobsToComplete();
+
+    assertTrue(testFile.exists());
+
+    project.build(IncrementalProjectBuilder.CLEAN_BUILD, monitor);
+    waitForJobsToComplete();
+
+    assertTrue(testFile.getParent().isSynchronized(IResource.DEPTH_INFINITE));
+    assertFalse(testFile.exists());
+  }
+
 }
